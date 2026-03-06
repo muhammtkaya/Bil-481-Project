@@ -1,0 +1,104 @@
+body {
+    background-color: rgb(116, 33, 38);
+}
+
+#text {
+    background-color: black;
+    color: aliceblue;
+    padding: 10px;
+}
+
+#game {
+    max-width: 350px;
+    max-height: 400px;
+    background-color: gray;
+    color: aliceblue;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+#controls {
+    border: 1px solid black;
+    padding: 5px;
+}
+
+#monsterStats {
+    display: none;
+    border: 1px solid black;
+    color: aliceblue;
+    padding: 5px;
+    background-color: rgb(128, 41, 64);
+}
+
+.stat {
+    padding-right: 10px;
+}
+
+
+/* Kitap tablosu için */
+/* Gemini yazdı nasıl yaptı fikrim yok */
+.container {
+    width: 90%;
+    max-width: 1000px;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    /* Hafif gölge */
+}
+
+/* Tablo Tasarımı */
+table {
+    border: 2px solid black;
+    width: 100%;
+    border-collapse: collapse;
+    /* Çizgileri birleştirir */
+    margin: 20px 0;
+    font-size: 18px;
+    text-align: left;
+}
+
+/* Tablo Başlığı */
+table thead tr {
+    background-color: #70b4e0;
+    color: #ffffff;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Hücre Ayarları */
+table th,
+table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #dddddd;
+    border: 2px solid black;
+    border-collapse: collapse;
+}
+
+/* Satır Renkleri (Zebra Stil) */
+table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+
+/* Üzerine Gelince Renk Değişimi */
+table tbody tr:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* Son Satırın Çizgisini Kalınlaştır */
+table tbody tr:last-of-type {
+    border-bottom: 2px solid #3498db;
+}
+
+/* h1 için */
+h1 {
+    background-color: aliceblue;
+    color: black;
+    margin: 10px;
+    padding: 5px;
+    border-radius: 100em;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf8">
+    <title>RPG Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>Arayüzü test etmek için basitbir oyun</h1>
+
+    <div id="game">
+        <div id="stats">
+            <span class="stat">XP: <strong><span id="xpText">0</span></strong></span>
+            <span class="stat">Health: <strong><span id="healthText">100</span></strong></span>
+            <span class="stat">Gold: <strong><span id="goldText">50</span></strong></span>
+        </div>
+
+        <div id="controls">
+            <button id="button1">Go to store</button>
+            <button id="button2">Go to cave</button>
+            <button id="button3">Fight the dragon</button>
+        </div>
+
+        <div id="monsterStats">
+            <span class="stat">Monster name: <strong><span id="monsterName"></span></strong></span>
+            <span class="stat">Monster health: <strong><span id="monsterHealth"></span></strong></span>
+        </div>
+
+        <div id="text">
+            Welcome to dragon repeller. You have to defeat the dragon that şs preventing people fron leaving the town.
+            You are in the town square. Where doy ou want to go?
+        </div>
+    </div>
+
+    <h1>Kitap listelemeyi test etmek içim tablo.</h1>
+
+    <div class="container">
+        <h1>LibRA Kitap Listesi</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Kitap Adı</th>
+                    <th>Yazar</th>
+                    <th>Stok</th>
+                </tr>
+            </thead>
+            <tbody id="kitap-tablosu">
+            </tbody>
+        </table>
+    </div>
+
+    <script src="index.js" defer></script>
+</body>
+
+</html>
