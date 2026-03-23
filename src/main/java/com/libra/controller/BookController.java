@@ -5,6 +5,7 @@ import com.libra.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -20,5 +21,15 @@ public class BookController {
     @GetMapping
     public List<Book> getAllBooks() {
         return bookService.getAllBooks();
+    }
+
+    @GetMapping("/recommended")
+    public List<Book> getRecommendedBooks(@RequestParam(required = false) List<String> categories) {
+        return bookService.getRecommendedBooks(categories);
+    }
+
+    @GetMapping("/search")
+    public List<Book> searchBooks(@RequestParam("keyword") String keyword) {
+        return bookService.searchBooks(keyword);
     }
 }

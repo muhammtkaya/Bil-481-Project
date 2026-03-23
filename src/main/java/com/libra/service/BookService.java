@@ -16,6 +16,23 @@ public class BookService {
         return bookRepository.findAll();
     }
 
+    // İlgi alanlarına göre listeleme
+    public List<Book> getRecommendedBooks(List<String> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return bookRepository.findAll(); // İlgi alanı yoksa hepsini getir
+        }
+        return bookRepository.findByCategoryIn(categories);
+    }
+
+    // Arama Çubuğu
+    public List<Book> searchBooks(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return bookRepository.findAll();
+        }
+        return bookRepository.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCaseOrCategoryContainingIgnoreCase(
+                keyword, keyword, keyword);
+    }
+
     public Book saveBook(Book book) {
         return bookRepository.save(book);
     }

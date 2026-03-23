@@ -1,60 +1,207 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="tr">
 
 <head>
-    <meta charset="utf8">
-    <title>RPG Game</title>
+    <meta charset="UTF-8">
+    <title>LibRA - Kütüphane Sistemi</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <h1>Arayüzü test etmek için basitbir oyun</h1>
+    <div id="loadingOverlay" style="display:none;">
+        <div class="spinner"></div>
+        <p>İşlem yapılıyor...</p>
+    </div>
 
-    <div id="game">
-        <div id="stats">
-            <span class="stat">XP: <strong><span id="xpText">0</span></strong></span>
-            <span class="stat">Health: <strong><span id="healthText">100</span></strong></span>
-            <span class="stat">Gold: <strong><span id="goldText">50</span></strong></span>
+    <div id="auth">
+        <div class="logo">
+            <img src="assets/logo.png" alt="LibRA">
         </div>
 
-        <div id="controls">
-            <button id="button1">Go to store</button>
-            <button id="button2">Go to cave</button>
-            <button id="button3">Fight the dragon</button>
+        <div id="loginBox">
+            <h2>Giriş Yap</h2>
+            <input id="loginUsername" placeholder="E-posta: isim@etu.edu.tr">
+            <div class="password-box">
+                <input id="loginPassword" type="password" placeholder="Şifre">
+                <span class="toggle" id="toggleLoginPass">👁️</span>
+            </div>
+            <button id="loginBtn">Giriş Yap</button>
+            <p class="switch">Hesabın yok mu? <span id="showRegisterBtn">Kayıt Ol</span></p>
         </div>
 
-        <div id="monsterStats">
-            <span class="stat">Monster name: <strong><span id="monsterName"></span></strong></span>
-            <span class="stat">Monster health: <strong><span id="monsterHealth"></span></strong></span>
-        </div>
+        <div id="registerBox" style="display:none;">
+            <h2>Kayıt Ol</h2>
+            <input id="regUsername" type="email" placeholder="E-posta (isim@etu.edu.tr)">
 
-        <div id="text">
-            Welcome to dragon repeller. You have to defeat the dragon that şs preventing people fron leaving the town.
-            You are in the town square. Where doy ou want to go?
+            <div class="password-box">
+                <input id="regPassword" type="password" placeholder="Şifre oluştur">
+                <span class="toggle" onclick="toggleRegPassword()">👁️</span>
+            </div>
+
+            <div id="password-rules"
+                style="font-size:12px; color:#666; margin-bottom:15px; text-align:left; background:#f9f9f9; padding:10px; border-radius:5px;">
+                <strong>Şifre Kuralları:</strong>
+                <ul style="margin-left:20px; margin-top:5px;">
+                    <li id="rule-length">8-16 karakter uzunluğunda</li>
+                    <li id="rule-upper">En az 1 büyük harf (A-Z)</li>
+                    <li id="rule-lower">En az 1 küçük harf (a-z)</li>
+                    <li id="rule-number">En az 1 rakam (0-9)</li>
+                    <li id="rule-special">En az 1 özel karakter (!@#$%^&*)</li>
+                </ul>
+            </div>
+
+            <button id="registerBtn">Kayıt Ol</button>
+            <p class="switch">Zaten hesabın var mı? <span id="showLoginBtn">Giriş Yap</span></p>
         </div>
     </div>
 
-    <h1>Kitap listelemeyi test etmek içim tablo.</h1>
-
-    <div class="container">
-        <h1>LibRA Kitap Listesi</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Kitap Adı</th>
-                    <th>Yazar</th>
-                    <th>Stok</th>
-                </tr>
-            </thead>
-            <tbody id="kitap-tablosu">
-            </tbody>
-        </table>
+    <div id="categoryPage" style="display:none;">
+        <h2>İlgi Alanlarını Seç</h2>
+        <div class="category-list" id="initialCategoryList">
+            <label class="category-item"><input type="checkbox" value="Yazılım"><span>Yazılım & Teknoloji</span></label>
+            <label class="category-item"><input type="checkbox" value="Roman"><span>Edebiyat / Roman</span></label>
+            <label class="category-item"><input type="checkbox" value="Felsefe"><span>Felsefe & Düşünce</span></label>
+            <label class="category-item"><input type="checkbox" value="Tarih"><span>Tarih</span></label>
+        </div>
+        <button id="saveCategoriesBtn">Kaydet ve Devam Et</button>
     </div>
 
-    <script src="index.js" defer></script>
+    <div id="app" style="display:none;">
+        <nav class="top-nav">
+            <div class="nav-left">
+                <img src="assets/logo.png" class="nav-logo" alt="Logo">
+                <div class="brand-text">
+                    <a href="https://www.etu.edu.tr/tr" class="nav-link">TOBB ETÜ</a>
+                    <span class="sub-name">/ </span>
+                    <a href="https://www.etu.edu.tr/tr" class="nav-link"> Kütüphane</a>
+                </div>
+            </div>
+            <div class="nav-center">
+                <div class="search-wrapper">
+                    <input id="searchInput" placeholder="Kitap ara...">
+                    <button class="search-btn">🔍</button>
+                </div>
+            </div>
+            <div class="nav-right">
+                <span id="navHomeBtn" class="nav-link" style="cursor:pointer;">Anasayfa</span>
+                <div class="profile-link" id="navProfileBtn">
+                    <span>Profilim</span>
+                    <span>👤</span>
+                </div>
+            </div>
+        </nav>
+
+        <div class="content-container">
+            <div id="books" class="book-grid"></div>
+
+            <div id="bookDetail" style="display:none;">
+                <button id="closeDetailBtn" class="back-btn">⬅️ Listeye Dön</button>
+                <div class="detail-card">
+                    <div class="detail-left">
+                        <img id="d-img" src="assets/default_book_page.png"
+                            onerror="this.onerror=null; this.src='assets/default_book_page.png';">
+                    </div>
+                    <div class="detail-right">
+                        <h1 id="d-title">Başlık</h1>
+                        <h3 id="d-author" style="color:#6d4c41;">Yazar</h3>
+                        <div class="stats-row">
+                            <span>📄 <span id="d-page">0</span> Sayfa</span>
+                            <span>📦 Stok: <span id="d-stock-count">0</span></span>
+                        </div>
+                        <p id="d-desc" class="book-desc">Açıklama...</p>
+                        <div class="detail-actions" id="d-buttons"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profilePage" style="display:none;">
+        <div class="profile-layout">
+            <aside class="profile-sidebar">
+                <div class="user-info">
+                    <div class="avatar">FK</div>
+                    <h3 id="profileName">Kullanıcı</h3>
+                </div>
+                <nav class="profile-menu">
+                    <button data-tab="info" class="menu-btn active">👤 Profil Ayarları</button>
+                    <button id="adminTabBtn" data-tab="admin" class="menu-btn" style="display:none; color:#e65100;">🛠️
+                        Kitap Ekle</button>
+                    <button data-tab="borrowed" class="menu-btn">📖 Ödünç Aldıklarım</button>
+                    <button data-tab="waiting" class="menu-btn">⏳ Beklediklerim</button>
+                    <button data-tab="favorites" class="menu-btn">❤️ Favorilerim</button>
+                    <button id="backHomeProfileBtn" class="menu-btn back-home">⬅️ Dön</button>
+
+                    <button id="logoutBtn" class="menu-btn" style="color:#ffccbc;">Çıkış Yap</button>
+                </nav>
+            </aside>
+
+            <main class="profile-content">
+                <div id="tab-info" class="tab-content active">
+                    <h2>Profil</h2>
+                    <div class="info-card">
+                        <label>E-posta</label>
+                        <input type="text" id="p-username-input" disabled style="background:#eee;">
+
+                        <label style="margin-top:15px; display:block;">Yeni Şifre</label>
+                        <input type="password" id="p-new-password" placeholder="Değiştirmek için yazın...">
+
+                        <label style="margin-top:15px; display:block;">İlgi Alanları</label>
+                        <div id="p-categories-edit" class="category-grid-mini">
+                            <label><input type="checkbox" value="Yazılım"> Yazılım</label>
+                            <label><input type="checkbox" value="Roman"> Roman</label>
+                            <label><input type="checkbox" value="Felsefe"> Felsefe</label>
+                            <label><input type="checkbox" value="Tarih"> Tarih</label>
+                        </div>
+                        <button id="updateProfileBtn" class="save-btn" style="margin-top:20px;">Kaydet</button>
+                    </div>
+                </div>
+                <div id="tab-admin" class="tab-content" style="display:none;">
+                    <h2 style="color:#e65100;">🛠️ Yönetici Paneli</h2>
+                    <div class="info-card" style="border:1px solid #ffcc80; background:#fff3e0;">
+                        <h3 style="margin-bottom:15px;">Yeni Kitap Ekle</h3>
+
+                        <label>Kitap Adı</label>
+                        <input id="adminBookTitle" placeholder="Örn: Sefiller">
+
+                        <label>Yazar</label>
+                        <input id="adminBookAuthor" placeholder="Örn: Victor Hugo">
+
+                        <label>Kategori</label>
+                        <select id="adminBookCat" class="custom-select">
+                            <option value="Yazılım">Yazılım & Teknoloji</option>
+                            <option value="Roman">Edebiyat / Roman</option>
+                            <option value="Felsefe">Felsefe & Düşünce</option>
+                            <option value="Tarih">Tarih</option>
+                            <option value="Bilim">Bilim & Mühendislik</option>
+                            <option value="Diğer">Diğer</option>
+                        </select>
+
+                        <label>Stok Adedi</label>
+                        <input id="adminBookStock" type="number" placeholder="Örn: 5" min="1">
+
+                        <button id="adminAddBookBtn" style="background:#e65100; margin-top:10px;">+ Kitabı Sisteme
+                            Ekle</button>
+                    </div>
+                </div>
+                <div id="tab-borrowed" class="tab-content" style="display:none;">
+                    <h2>Ödünç Aldıklarım</h2>
+                    <div id="list-borrowed" class="book-grid"></div>
+                </div>
+                <div id="tab-waiting" class="tab-content" style="display:none;">
+                    <h2>Sıra Beklediklerim</h2>
+                    <div id="list-waiting" class="book-grid"></div>
+                </div>
+                <div id="tab-favorites" class="tab-content" style="display:none;">
+                    <h2>Favorilerim</h2>
+                    <div id="list-favorites" class="book-grid"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 
 </html>

@@ -15,6 +15,9 @@ public class Book {
     @Column(nullable = false)
     private String author;
 
+    @Column(name = "category")
+    private String category;
+
     @Column(name = "stock_sayisi")
     private Integer stockCount = 0;
 
@@ -47,6 +50,14 @@ public class Book {
 
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public Integer getStockCount() {
