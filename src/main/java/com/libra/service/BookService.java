@@ -19,7 +19,7 @@ public class BookService {
     // İlgi alanlarına göre listeleme
     public List<Book> getRecommendedBooks(List<String> categories) {
         if (categories == null || categories.isEmpty()) {
-            return bookRepository.findAll(); // İlgi alanı yoksa hepsini getir
+            return bookRepository.findAll();
         }
         return bookRepository.findByCategoryIn(categories);
     }
@@ -31,6 +31,21 @@ public class BookService {
         }
         return bookRepository.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCaseOrCategoryContainingIgnoreCase(
                 keyword, keyword, keyword);
+    }
+
+    public Book updateCoverUrl(Integer bookId, String coverUrl) throws Exception {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new Exception("Kitap bulunamadı!"));
+        book.setCoverUrl(coverUrl);
+        return bookRepository.save(book);
+    }
+
+    public Book addBook(Book newBook) {
+        return bookRepository.save(newBook);
+    }
+
+    public void deleteBook(Integer bookId) {
+        bookRepository.deleteById(bookId);
     }
 
     public Book saveBook(Book book) {

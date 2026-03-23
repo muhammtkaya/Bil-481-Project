@@ -24,6 +24,9 @@ public class Book {
     @Column(name = "like_sayisi")
     private Integer likeCount = 0;
 
+    @Column(name = "cover_url", length = 1000)
+    private String coverUrl;
+
     public Book() {
     }
 
@@ -74,5 +77,13 @@ public class Book {
 
     public void setLikeCount(Integer likeCount) {
         this.likeCount = likeCount;
+    }
+
+    public String getCoverUrl() {
+        return coverUrl;
+    }
+
+    public void setCoverUrl(String coverUrl) {
+        this.coverUrl = coverUrl;
     }
 }

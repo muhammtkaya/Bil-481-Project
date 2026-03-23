@@ -25,6 +25,8 @@ const DB = {
 
 // --- GLOBAL DEĞİŞKENLER ---
 let currentUser = null;
+
+const DEFAULT_COVER_COUNT = 6;
 //let allBooks = [...DB.books];
 let allBooks = [];
 let loadingTimer = null;
@@ -275,16 +277,26 @@ function updateUserUI() {
 }
 
 // 4. KİTAPLARI LİSTELE
+
+// Rastgele kitap kapağı görüntülemek için yardımcı fonksiyon
+function getDefaultCover(bookId) {
+    const randInt = Math.floor(Math.random() * DEFAULT_COVER_COUNT * 100);
+    const coverNum = (bookId % DEFAULT_COVER_COUNT) + 1;
+    return `assets/default${coverNum}.png`;
+}
+
 function renderBooks(customList = null) {
     const container = document.getElementById("books");
-    container.innerHTML = "";
+    container.innerHTML = ""; // Önceki kitapları temizle
 
     let listToDisplay;
 
+    // 1. Hangi listenin gösterileceğine karar ver (Arama mı, İlgi alanı mı?)
     if (customList !== null) {
         listToDisplay = customList;
     } else {
-        if (currentUser) {
+        if (currentUser && currentUser.categories && currentUser.categories.length > 0) {
+            // Sadece kullanıcının ilgi alanlarına uyanları filtrele
             listToDisplay = allBooks.filter(book =>
                 currentUser.categories.includes(book.category)
             );
@@ -293,20 +305,36 @@ function renderBooks(customList = null) {
         }
     }
 
+    // 2. Liste boşsa kullanıcıya bilgi ver
     if (listToDisplay.length === 0) {
         container.innerHTML = `<p style="text-align:center; width:100%; color:#888;">Bu kriterlere uygun kitap bulunamadı.</p>`;
         return;
     }
 
+    // Kitapları Rastgele sırala
+    listToDisplay.sort((book1, book2) => {
+        if (book1.coverUrl && !book2.coverUrl) {
+            return -1
+        }
+        if (!book1.coverUrl && book2.coverUrl) {
+            return 1
+        }
+        return Math.random() - 0.5
+    });
+
+    // 3. Kitapları ekrana çiz
     listToDisplay.forEach(book => {
         const isOut = book.stock < 1;
         const div = document.createElement("div");
         div.className = `book-card ${isOut ? 'out-of-stock-card' : ''}`;
 
+        // Kapak resmi kontrolü: Veritabanında URL var mı? Yoksa varsayılanı (default) getir.
+        const fallbackImg = getDefaultCover(book.id);
+        const imgSrc = book.coverUrl ? book.coverUrl : fallbackImg;
+
         div.innerHTML = `
             <div style="cursor:pointer">
-                <img src="assets/covers/${book.id}.jpg"
-                    onerror="this.onerror=null; this.src='assets/default_book_page.png';">
+                <img src="${imgSrc}" onerror="this.onerror=null; this.src='${fallbackImg}';">
                 <span class="category-tag">${book.category}</span>
                 <h4 class="book-title" style="margin:5px 0;">${book.title}</h4>
                 <small class="book-author">${book.author}</small>
@@ -316,7 +344,11 @@ function renderBooks(customList = null) {
                     </span>
                 </div>
             </div>`;
+
+        // Karta tıklanınca detay sayfasını aç
         div.querySelector("div").onclick = () => openBookDetail(book.id);
+
+        // Kartı sayfaya (container içine) ekle
         container.appendChild(div);
     });
 }
@@ -326,96 +358,83 @@ function openBookDetail(bookId) {
     const book = allBooks.find(b => b.id === bookId);
     if (!book) return;
 
+    const fallbackImg = getDefaultCover(book.id);
     const detailImg = document.getElementById("d-img");
-    detailImg.src = `assets/covers/${book.id}.jpg`;
+
+    detailImg.src = book.coverUrl ? book.coverUrl : fallbackImg;
     detailImg.onerror = function () {
-        this.onerror = null; // Sonsuz döngüyü engeller
-        this.src = 'assets/default_book_page.png';
+        this.onerror = null;
+        this.src = fallbackImg;
     };
+
+    // 2. Metin Atamaları
     document.getElementById("d-title").textContent = book.title;
     document.getElementById("d-author").textContent = book.author;
-    document.getElementById("d-desc").textContent = book.desc;
-    document.getElementById("d-page").textContent = book.pages;
+    document.getElementById("d-desc").textContent = book.desc || "Açıklama bulunmuyor.";
+    document.getElementById("d-page").textContent = book.pages || 0;
     document.getElementById("d-stock-count").textContent = book.stock;
 
+    // 3. Butonlar
     const btnDiv = document.getElementById("d-buttons");
     btnDiv.innerHTML = "";
 
-    // ADMIN BUTONU
     if (currentUser.role === 'admin') {
+        const coverDiv = document.createElement("div");
+        coverDiv.style.marginBottom = "20px";
+        coverDiv.style.display = "flex";
+        coverDiv.style.gap = "10px";
+
+        coverDiv.innerHTML = `
+            <input type="text" id="coverUrlInput" placeholder="İnternetten Resim URL'si girin..." value="${book.coverUrl || ''}" style="margin:0; flex:1;">
+            <button id="saveCoverBtn" style="background:#1976d2; width:auto; padding:0 15px;">Kapağı Kaydet</button>
+        `;
+        btnDiv.appendChild(coverDiv);
+
+        // Kapağı Kaydetme İşlemi
+        document.getElementById("saveCoverBtn").onclick = () => {
+            const newUrl = document.getElementById("coverUrlInput").value.trim();
+
+            fetch(`http://localhost:8080/api/books/${book.id}/cover`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ coverUrl: newUrl })
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error("Sunucu hatası");
+                    return res.json();
+                })
+                .then(updatedBook => {
+                    alert("Kapak URL'si başarıyla güncellendi!");
+                    book.coverUrl = updatedBook.coverUrl;
+                    openBookDetail(book.id);
+                })
+                .catch(err => alert("Kapak güncellenirken hata oluştu."));
+        };
+
         const delBtn = document.createElement("button");
         delBtn.textContent = "🗑️ Kitabı Sil (Admin)";
         delBtn.style.background = "#d32f2f";
         delBtn.style.marginBottom = "15px";
+
         delBtn.onclick = () => {
-            if (confirm("Bu kitabı sistemden tamamen silmek istediğinize emin misiniz?")) {
-                allBooks = allBooks.filter(b => b.id !== bookId);
-                alert("Kitap silindi.");
-                renderBooks(null);
-                showView('app');
+            if (confirm(`"${book.title}" adlı kitabı veritabanından tamamen silmek istediğinize emin misiniz?`)) {
+
+                fetch(`http://localhost:8080/api/books/${book.id}`, {
+                    method: 'DELETE'
+                })
+                    .then(res => {
+                        if (res.ok) {
+                            alert("Kitap sistemden silindi.");
+                            initApp();
+                        } else {
+                            throw new Error("Silme başarısız.");
+                        }
+                    })
+                    .catch(err => alert("Kitap silinirken bir hata oluştu."));
             }
         };
+
         btnDiv.appendChild(delBtn);
-    }
-
-    // FAVORİ BUTONU
-    const isFav = currentUser.favorites.includes(bookId);
-    const favBtn = document.createElement("button");
-    favBtn.textContent = isFav ? "❤️ Favorilerde" : "🤍 Favorilere Ekle";
-    favBtn.style.background = isFav ? "#ef5350" : "#bdbdbd";
-    favBtn.style.marginRight = "10px"; favBtn.style.width = "auto";
-    favBtn.onclick = () => {
-        if (isFav) currentUser.favorites = currentUser.favorites.filter(id => id !== bookId);
-        else currentUser.favorites.push(bookId);
-        openBookDetail(bookId);
-    };
-    btnDiv.appendChild(favBtn);
-
-    // ÖDÜNÇ/İADE BUTONLARI
-    const isBorrowed = currentUser.borrowedBooks.some(b => b.bookId === bookId);
-
-    if (isBorrowed) {
-        const btn = document.createElement("button");
-        btn.textContent = "↩️ İade Et";
-        btn.style.background = "#2e7d32"; btn.style.width = "auto";
-        btn.onclick = () => {
-            if (!confirm("Kitabı iade etmek istiyor musunuz?")) return;
-            currentUser.borrowedBooks = currentUser.borrowedBooks.filter(b => b.bookId !== bookId);
-            book.stock++;
-            alert("Kitap iade edildi.");
-            renderBooks(null);
-            openBookDetail(bookId);
-        };
-        btnDiv.appendChild(btn);
-
-    } else if (book.stock > 0) {
-        const btn = document.createElement("button");
-        btn.textContent = "📖 Ödünç Al";
-        btn.style.background = "#ff9800"; btn.style.width = "auto";
-        btn.onclick = () => {
-            book.stock--;
-            currentUser.borrowedBooks.push({ bookId: book.id, title: book.title });
-            alert("Kitap ödünç alındı! İyi okumalar.");
-            renderBooks(null);
-            openBookDetail(bookId);
-        };
-        btnDiv.appendChild(btn);
-    } else {
-        const isWaiting = currentUser.waitingBooks.includes(bookId);
-        const wBtn = document.createElement("button");
-        wBtn.textContent = isWaiting ? "🚫 Sıradan Çık" : "⏳ Stok Yok - Sıraya Gir";
-        wBtn.style.background = isWaiting ? "#5d4037" : "#795548"; wBtn.style.width = "auto";
-        wBtn.onclick = () => {
-            if (isWaiting) {
-                currentUser.waitingBooks = currentUser.waitingBooks.filter(id => id !== bookId);
-                alert("Sıradan çıkıldı.");
-            } else {
-                currentUser.waitingBooks.push(bookId);
-                alert("Sıraya girildi! Stok gelince bildirim alacaksınız.");
-            }
-            openBookDetail(bookId);
-        };
-        btnDiv.appendChild(wBtn);
     }
     showView('detail');
 }
@@ -448,21 +467,45 @@ document.getElementById("updateProfileBtn").onclick = () => {
 };
 
 // 8. ADMIN KİTAP EKLEME
+// 8. ADMIN YENİ KİTAP EKLEME (Gerçek DB Bağlantısı)
 document.getElementById("adminAddBookBtn").onclick = () => {
-    const title = document.getElementById("adminBookTitle").value;
-    const author = document.getElementById("adminBookAuthor").value;
+    const title = document.getElementById("adminBookTitle").value.trim();
+    const author = document.getElementById("adminBookAuthor").value.trim();
     const stock = document.getElementById("adminBookStock").value;
     const cat = document.getElementById("adminBookCat").value;
+    const coverUrl = document.getElementById("adminBookCover").value.trim(); // Yeni alan
 
-    if (title && stock) {
-        allBooks.push({
-            id: Date.now(), title, author, category: cat, stock: parseInt(stock),
-            img: "assets/default_book_page.png", pages: 300, desc: "Yeni kitap"
-        });
-        alert("Eklendi.");
-        renderBooks(null);
-        document.getElementById("adminBookTitle").value = "";
+    if (!title || !stock) {
+        alert("Lütfen Kitap Adı ve Stok Adedi alanlarını doldurun!");
+        return;
     }
+
+    const newBook = {
+        title: title,
+        author: author,
+        category: cat,
+        stock: parseInt(stock),
+        coverUrl: coverUrl !== "" ? coverUrl : null, // Boşsa null gönder, Java/JS varsayılanı halletsin
+        likeSayisi: 0
+    };
+
+    fetch('http://localhost:8080/api/books/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBook)
+    })
+        .then(res => res.json())
+        .then(savedBook => {
+            alert("Kitap veritabanına başarıyla eklendi!");
+            // Inputları temizle
+            document.getElementById("adminBookTitle").value = "";
+            document.getElementById("adminBookAuthor").value = "";
+            document.getElementById("adminBookStock").value = "";
+            document.getElementById("adminBookCover").value = "";
+            // Listeyi yenilemek için initApp'i çağır
+            initApp();
+        })
+        .catch(err => alert("Kitap eklenirken hata oluştu."));
 };
 
 // 9. NAVİGASYON (HATA DÜZELTİLDİ: Anasayfa butonu aramayı temizler)
