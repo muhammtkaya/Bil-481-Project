@@ -16,7 +16,8 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String password;
 
-    private String role = "user";
+    @Column(name = "role_name", nullable = false)
+    private String role;
 
     public User() {
     }
