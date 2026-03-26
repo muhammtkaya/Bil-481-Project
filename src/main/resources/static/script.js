@@ -26,7 +26,7 @@ const DB = {
 // --- GLOBAL DEĞİŞKENLER ---
 let currentUser = null;
 
-const DEFAULT_COVER_COUNT = 6;
+const DEFAULT_COVER_COUNT = 7;
 //let allBooks = [...DB.books];
 let allBooks = [];
 let loadingTimer = null;
