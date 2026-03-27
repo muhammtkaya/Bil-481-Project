@@ -8,7 +8,6 @@
 </head>
 
 <body>
-
     <div id="loadingOverlay" style="display:none;">
         <div class="spinner"></div>
         <p>İşlem yapılıyor...</p>
@@ -16,7 +15,7 @@
 
     <div id="auth">
         <div class="logo">
-            <img src="assets/logo.png" alt="LibRA">
+            <img src="assets/logo.png?v=2" alt="LibRA">
         </div>
 
         <div id="loginBox">
@@ -63,6 +62,8 @@
             <label class="category-item"><input type="checkbox" value="Roman"><span>Edebiyat / Roman</span></label>
             <label class="category-item"><input type="checkbox" value="Felsefe"><span>Felsefe & Düşünce</span></label>
             <label class="category-item"><input type="checkbox" value="Tarih"><span>Tarih</span></label>
+            <label class="category-item"><input type="checkbox" value="Bilim"><span>Bilim & Mühendislik</span></label>
+            <label class="category-item"><input type="checkbox" value="Diğer"><span>Diğer</span></label>
         </div>
         <button id="saveCategoriesBtn">Kaydet ve Devam Et</button>
     </div>
@@ -70,11 +71,11 @@
     <div id="app" style="display:none;">
         <nav class="top-nav">
             <div class="nav-left">
-                <img src="assets/logo.png" class="nav-logo" alt="Logo">
+                <img src="assets/logo.png?v=2" class="nav-logo" alt="Logo">
                 <div class="brand-text">
                     <a href="https://www.etu.edu.tr/tr" class="nav-link">TOBB ETÜ</a>
                     <span class="sub-name">/ </span>
-                    <a href="https://www.etu.edu.tr/tr" class="nav-link"> Kütüphane</a>
+                    <p> Kütüphane</p>
                 </div>
             </div>
             <div class="nav-center">
@@ -106,10 +107,8 @@
                         <h1 id="d-title">Başlık</h1>
                         <h3 id="d-author" style="color:#6d4c41;">Yazar</h3>
                         <div class="stats-row">
-                            <span>📄 <span id="d-page">0</span> Sayfa</span>
                             <span>📦 Stok: <span id="d-stock-count">0</span></span>
                         </div>
-                        <p id="d-desc" class="book-desc">Açıklama...</p>
                         <div class="detail-actions" id="d-buttons"></div>
                     </div>
                 </div>
@@ -121,7 +120,7 @@
         <div class="profile-layout">
             <aside class="profile-sidebar">
                 <div class="user-info">
-                    <div class="avatar">FK</div>
+                    <div class="avatar" id="profileAvatar">FK</div>
                     <h3 id="profileName">Kullanıcı</h3>
                 </div>
                 <nav class="profile-menu">
@@ -153,6 +152,8 @@
                             <label><input type="checkbox" value="Roman"> Roman</label>
                             <label><input type="checkbox" value="Felsefe"> Felsefe</label>
                             <label><input type="checkbox" value="Tarih"> Tarih</label>
+                            <label><input type="checkbox" value="Bilim"> Bilim</label>
+                            <label><input type="checkbox" value="Diğer"> Diğer</label>
                         </div>
                         <button id="updateProfileBtn" class="save-btn" style="margin-top:20px;">Kaydet</button>
                     </div>

@@ -14,6 +14,18 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+
+    // UserController.java içine eklenecek metot
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<?> updateProfile(@PathVariable Integer id, @RequestBody java.util.Map<String, Object> payload) {
+      try {
+        java.util.List<String> categories = (java.util.List<String>) payload.get("categories");
+        User updatedUser = userService.updateUserProfile(id, categories);
+        return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User newUser) {
         try {
