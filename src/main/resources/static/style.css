@@ -105,15 +105,32 @@ button:hover { background-color: #5d4037; }
 .brand-text { display: flex; flex-direction: row; gap: 1px; font-size: 18px; }
 
 .nav-center { flex: 1; display: flex; justify-content: center; }
+
+/* YENİ ARAMA MOTORU STİLLERİ EKLENDİ */
 .search-wrapper {
   position: relative;
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: 650px; /* Genişletildi */
   display: flex;
+  background: #fff; /* Bütünlük sağlamak için beyaz yapıldı */
+  border-radius: 4px;
+}
+.search-type-select {
+  border: none;
+  background: #efebe9;
+  border-right: 1px solid #ccc;
+  border-radius: 4px 0 0 4px;
+  padding: 0 10px;
+  color: #5d4037;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
 }
 .search-wrapper input {
   margin: 0;
-  border-radius: 4px 0 0 4px;
+  border-radius: 0; /* Ortada olduğu için kavis silindi */
   border: none; padding: 10px 15px;
+  flex: 1;
+  background: transparent;
 }
 .search-btn {
   width: 50px;
