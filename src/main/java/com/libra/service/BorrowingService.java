@@ -1,91 +1,102 @@
 package com.libra.service;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.libra.model.Book;
 import com.libra.model.BorrowedBook;
 import com.libra.model.User;
+import com.libra.model.Waitlist;
 import com.libra.repository.BookRepository;
 import com.libra.repository.BorrowingRepository;
 import com.libra.repository.UserRepository;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @Service
 public class BorrowingService {
     private final BorrowingRepository borrowingRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final WaitlistService waitlistService; //
 
-    public BorrowingService(BorrowingRepository borrowingRepository, BookRepository bookRepository,
-            UserRepository userRepository) {
+    public BorrowingService(BorrowingRepository borrowingRepository, 
+                            BookRepository bookRepository,
+                            UserRepository userRepository,
+                            WaitlistService waitlistService) {
         this.borrowingRepository = borrowingRepository;
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
+        this.waitlistService = waitlistService;
     }
 
-    public BorrowedBook borrowBook(Integer userId, Integer bookId) {
-        Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    @Transactional
+    public Object borrowBook(Integer userId, Integer bookId) {
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new RuntimeException("Kitap bulunamadı"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        List<BorrowedBook> userBorrowings = borrowingRepository.findByUser_Id(userId);
-        boolean alreadyBorrowed = userBorrowings.stream()
+        // Zaten ödünç alınmış mı kontrolü
+        boolean alreadyBorrowed = borrowingRepository.findByUser_Id(userId).stream()
                 .anyMatch(b -> b.getBook().getId().equals(bookId) && "BORROWED".equals(b.getStatus()));
 
-        if (alreadyBorrowed) {
-            throw new RuntimeException("Bu kitabı zaten ödünç aldınız ve henüz iade etmediniz.");
-        }
+        if (alreadyBorrowed) throw new RuntimeException("Bu kitabı zaten ödünç aldınız.");
 
+        // KRİTİK DEĞİŞİKLİK: Stok varsa ödünç kaydı döndürür
         if (book.getStockCount() > 0) {
             book.setStockCount(book.getStockCount() - 1);
             bookRepository.save(book);
-
-            BorrowedBook record = new BorrowedBook();
-            record.setUser(user);
-            record.setBook(book);
-            record.setBorrowDate(LocalDate.now());
-            record.setReturnDate(null);
-            record.setDueDate(LocalDate.now().plusDays(15));
-            record.setStatus("BORROWED");
-
-            return borrowingRepository.save(record);
+            return createBorrowRecord(user, book);
         }
-        throw new RuntimeException("Out of Stock");
+
+        // Stok yoksa Waitlist'e ekler ve artık HATA FIRLATMAZ, düz bir mesaj döndürür
+        waitlistService.addToWaitlist(user, book);
+        return "WAITLISTED"; 
     }
 
-    // METOT 1: Kitap İade Etme İşlemi
+    @Transactional
     public BorrowedBook returnBook(Integer recordId) {
-        BorrowedBook record = borrowingRepository.findById(recordId)
-                .orElseThrow(() -> new RuntimeException("Borrowing record not found"));
+        BorrowedBook record = borrowingRepository.findById(recordId).orElseThrow(() -> new RuntimeException("Kayıt bulunamadı"));
+        if ("RETURNED".equals(record.getStatus())) throw new RuntimeException("Kitap zaten iade edilmiş.");
 
-        if ("RETURNED".equals(record.getStatus())) {
-            throw new RuntimeException("Book is already returned");
-        }
-
-        // Kitabın stok sayısını 1 artır
-        Book book = record.getBook();
-        book.setStockCount(book.getStockCount() + 1);
-        bookRepository.save(book);
-
-        // Kaydı güncelle
         record.setStatus("RETURNED");
         record.setReturnDate(LocalDate.now());
+        borrowingRepository.save(record);
 
+        Book book = record.getBook();
+        
+        // Bekleme listesindeki ilk kişiyi kontrol et
+        Optional<Waitlist> nextInLine = waitlistService.getNextInQueue(book.getId());
+
+        if (nextInLine.isPresent()) {
+            Waitlist waitEntry = nextInLine.get();
+            // Kitabı doğrudan sıradakine ata (Stok artmaz, doğrudan yeni kayıt açılır)
+            createBorrowRecord(waitEntry.getUser(), book);
+            waitlistService.updateWaitlistStatus(waitEntry, "ASSIGNED");
+        } else {
+            // Sırada kimse yoksa stoğu artır
+            book.setStockCount(book.getStockCount() + 1);
+            bookRepository.save(book);
+        }
+        return record;
+    }
+
+    private BorrowedBook createBorrowRecord(User user, Book book) {
+        BorrowedBook record = new BorrowedBook();
+        record.setUser(user);
+        record.setBook(book);
+        record.setBorrowDate(LocalDate.now());
+        record.setDueDate(LocalDate.now().plusDays(15));
+        record.setStatus("BORROWED");
         return borrowingRepository.save(record);
     }
 
-    // METOT 2: Kullanıcının Ödünç Aldığı Kitapları Listeleme (Profil sayfası
-    // için)
     public List<BorrowedBook> getBorrowingsByUserId(Integer userId) {
         return borrowingRepository.findByUser_Id(userId);
     }
 
-    // METOT 3: İade Tarihi Geçmiş (Gecikmiş) Kitapları Listeleme
     public List<BorrowedBook> getOverdueBorrowings() {
-        // Durumu BORROWED olan ve dueDate (son teslim tarihi) bugünden önce olanları
-        // getirir
         return borrowingRepository.findByStatusAndDueDateBefore("BORROWED", LocalDate.now());
     }
 }

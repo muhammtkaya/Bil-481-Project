@@ -246,15 +246,37 @@ button:hover { background-color: #5d4037; }
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* STOK DURUMU RENKLERİ */
+/* STOK DURUMU VE BEKLEME LİSTESİ RENKLERİ */
 .badge-stock {
   font-size: 12px; padding: 4px 10px;
   border-radius: 12px;
   background: #e8f5e9; 
   color: #2e7d32; font-weight: bold;
 }
-.badge-stock.out { background: #ffe2e2; color: #d32f2f; }
-.out-of-stock-card { opacity: 0.7; background-color: #fce4ec; }
+.badge-stock.out { background: #fff3e0; color: #e65100; } /* Bekleme için turuncuya yakın ton */
+.out-of-stock-card { opacity: 0.85; border: 1px dashed #e65100; }
+
+.badge-wait {
+  background: #fff8e1;
+  color: #ffa000; /* Bekleme durumunu temsil eden renk */
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+/* LİSTE ELEMANLARI (PROFİL) */
+.list-item-mini {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #fdfdfd;
+  border-radius: 8px;
+  border-left: 4px solid #8d6e63;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
 
 /* DETAY SAYFASI */
 .back-btn {
