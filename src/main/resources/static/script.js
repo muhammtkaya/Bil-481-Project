@@ -50,29 +50,52 @@ function showView(viewName) {
     else if (viewName === 'profile') views.profile.style.display = "block";
 }
 
-// --- SAYFAYI YENİLEMEDEN VERİLERİ GÜNCELLEME (YENİ) ---
+// --- SAYFAYI YENİLEMEDEN VERİLERİ GÜNCELLEME ---
 function syncUserAndRefresh(message) {
     toggleLoading(true);
-    // Veritabanındaki en güncel halimizi çekmek için tekrar giriş yapıyoruz (Arka planda)
+
     fetch('http://localhost:8080/api/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: currentUser.username, password: currentUser.password })
     })
-    .then(res => res.json())
-    .then(user => {
-        // Şifreyi JS hafızasında tutmaya devam et (API'den hashli gelebilir)
-        const currentPass = currentUser.password; 
-        currentUser = user; 
-        currentUser.password = currentPass; 
-        
-        if (message) alert(message);
-        initApp(); // Kitap listesini ve ekranı tazele
-    })
-    .catch(err => {
-        toggleLoading(false);
-        console.error("Senkronizasyon hatası:", err);
-    });
+        .then(res => {
+            if (!res.ok) throw new Error("Kullanıcı doğrulaması başarısız.");
+            return res.json();
+        })
+        .then(user => {
+            const currentPass = currentUser.password;
+            currentUser = user;
+            currentUser.password = currentPass;
+
+            // Ödünç alma kayıtlarını getir
+            return fetch(`http://localhost:8080/api/borrowings/user/${currentUser.id}`);
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Ödünç alma kayıtları sunucudan çekilemedi. (Backend hatası)");
+            return res.json();
+        })
+        .then(borrowings => {
+            // Sadece "BORROWED" durumunda olan (aktif) kayıtları al
+            const activeBorrowings = borrowings.filter(b => b.status === "BORROWED");
+
+            currentUser.borrowedBooks = activeBorrowings.map(record => ({
+                recordId: record.id,
+                bookId: record.book.id,
+                title: record.book.title
+            }));
+
+            // İşlem başarılıysa mesajı göster
+            if (message) alert(message);
+
+            // Ekranı ve profil sayfalarını tazele
+            initApp();
+        })
+        .catch(err => {
+            toggleLoading(false);
+            alert("İşlem sırasında bir sorun oluştu:\n" + err.message);
+            console.error("Senkronizasyon hatası:", err);
+        });
 }
 
 
@@ -99,11 +122,11 @@ document.getElementById("loginBtn").onclick = function () {
             currentUser = user;
             currentUser.password = p; // Şifreyi hafızada tut (Sync için lazım)
             // Eğer listeler null gelirse boş dizi yap
-            if(!currentUser.categories) currentUser.categories = [];
-            if(!currentUser.borrowedBooks) currentUser.borrowedBooks = [];
-            if(!currentUser.favorites) currentUser.favorites = [];
-            if(!currentUser.waitingBooks) currentUser.waitingBooks = [];
-            initApp(); 
+            if (!currentUser.categories) currentUser.categories = [];
+            if (!currentUser.borrowedBooks) currentUser.borrowedBooks = [];
+            if (!currentUser.favorites) currentUser.favorites = [];
+            if (!currentUser.waitingBooks) currentUser.waitingBooks = [];
+            initApp();
         })
         .catch(error => alert(error.message));
 };
@@ -224,7 +247,7 @@ function initApp() {
                 } else {
                     // Detay sayfasındayken kitap güncellendiyse (ödünç alma vb.) ekranı tazele
                     const currentBookId = document.getElementById("d-buttons").getAttribute("data-current-book");
-                    if(currentBookId) openBookDetail(parseInt(currentBookId));
+                    if (currentBookId) openBookDetail(parseInt(currentBookId));
                 }
                 updateUserUI();
                 renderProfileLists(); // Profil listelerini de arka planda tazele
@@ -244,7 +267,7 @@ if (searchInput) {
         const term = e.target.value.trim();
 
         if (term === "") {
-            initApp(); 
+            initApp();
         } else {
             fetch(`http://localhost:8080/api/books/search?keyword=${term}`)
                 .then(res => {
@@ -254,8 +277,8 @@ if (searchInput) {
                     return res.json();
                 })
                 .then(data => {
-                    allBooks = data; 
-                    renderBooks(allBooks); 
+                    allBooks = data;
+                    renderBooks(allBooks);
                 })
                 .catch(err => {
                     console.error("Arama hatası:", err);
@@ -275,7 +298,7 @@ function updateUserUI() {
 
     // 2. Avatar harflerini hesapla
     let initials = "";
-    const nameArray = namePart.split('.'); 
+    const nameArray = namePart.split('.');
     if (nameArray.length > 1) {
         initials = (nameArray[0][0] + nameArray[1][0]).toUpperCase();
     } else {
@@ -299,7 +322,7 @@ function getDefaultCover(bookId) {
 
 function renderBooks(customList = null) {
     const container = document.getElementById("books");
-    container.innerHTML = ""; 
+    container.innerHTML = "";
 
     let listToDisplay;
 
@@ -376,19 +399,26 @@ function openBookDetail(bookId) {
 
     // --- KULLANICI BUTONLARI ---
     const isFavorite = currentUser.favorites && currentUser.favorites.includes(book.id);
-    const isBorrowed = currentUser.borrowedBooks && currentUser.borrowedBooks.some(b => b.bookId === book.id);
+    const borrowedRecord = currentUser.borrowedBooks?.find(b => b.bookId === book.id);
+    const isBorrowed = !!borrowedRecord; // borrowedRecord doluysa true, yoksa false
     const isWaiting = currentUser.waitingBooks && currentUser.waitingBooks.includes(book.id);
-    const isOut = book.stockCount < 1; 
+    const isOut = book.stockCount < 1;
 
     const actionBtn = document.createElement("button");
     actionBtn.style.marginBottom = "10px";
-    
+
     if (isBorrowed) {
         actionBtn.textContent = "↩️ İade Et";
         actionBtn.style.background = "#8d6e63";
         actionBtn.onclick = () => {
-            fetch(`http://localhost:8080/api/users/${currentUser.id}/return/${book.id}`, { method: 'POST' })
-                .then(res => { if (res.ok) syncUserAndRefresh("Kitap başarıyla iade edildi."); else alert("İade başarısız."); });
+            // YENİ İADE ENDPOINT'İ (Kitap ID yerine Record ID gönderiyoruz)
+            fetch(`http://localhost:8080/api/borrowings/return/${borrowedRecord.recordId}`, {
+                method: 'POST'
+            })
+                .then(res => {
+                    if (res.ok) syncUserAndRefresh("Kitap başarıyla iade edildi.");
+                    else alert("İade başarısız.");
+                });
         };
     } else if (isOut) {
         if (isWaiting) {
@@ -410,14 +440,19 @@ function openBookDetail(bookId) {
         actionBtn.textContent = "📖 Ödünç Al";
         actionBtn.style.background = "#4caf50";
         actionBtn.onclick = () => {
-            fetch(`http://localhost:8080/api/users/${currentUser.id}/borrow/${book.id}`, { method: 'POST' })
+            // YENİ ÖDÜNÇ ALMA ENDPOINT'İ (URL yerine JSON Body ile yolluyoruz)
+            fetch(`http://localhost:8080/api/borrowings/borrow`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, bookId: book.id })
+            })
                 .then(res => {
                     if (res.ok) syncUserAndRefresh("Kitap başarıyla ödünç alındı!");
                     else res.text().then(t => alert(t));
                 });
         };
     }
-    
+
     const favBtn = document.createElement("button");
     favBtn.textContent = isFavorite ? "❤️ Favorilerden Çıkar" : "🤍 Favorilere Ekle";
     favBtn.style.background = isFavorite ? "#d32f2f" : "#9e9e9e";
@@ -493,7 +528,7 @@ function openBookDetail(bookId) {
 
 // 6. İLK KAYITTA KATEGORİ KAYDETME (API BAĞLI)
 document.getElementById("saveCategoriesBtn").onclick = () => {
-    
+
     const selected = [...document.querySelectorAll("#initialCategoryList input:checked")].map(i => i.value);
     if (selected.length === 0) return alert("Seçim yapınız!");
 
@@ -503,15 +538,15 @@ document.getElementById("saveCategoriesBtn").onclick = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categories: selected })
     })
-    .then(res => res.json())
-    .then(updatedUser => {
-        currentUser.categories = updatedUser.categories;
-        initApp();
-    })
-    .catch(err => {
-        toggleLoading(false);
-        alert("Kategoriler kaydedilirken hata oluştu!");
-    });
+        .then(res => res.json())
+        .then(updatedUser => {
+            currentUser.categories = updatedUser.categories;
+            initApp();
+        })
+        .catch(err => {
+            toggleLoading(false);
+            alert("Kategoriler kaydedilirken hata oluştu!");
+        });
     initApp();
 };
 
@@ -531,22 +566,22 @@ document.getElementById("updateProfileBtn").onclick = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categories: selected, password: newPass })
     })
-    .then(res => {
-        if (!res.ok) throw new Error("Güncelleme başarısız!");
-        return res.json();
-    })
-    .then(updatedUser => {
-        // Şifre değiştiyse JS hafızasındakini de güncelle
-        if (newPass && newPass.trim() !== "") {
-            currentUser.password = newPass; 
-        }
-        syncUserAndRefresh("Profiliniz başarıyla güncellendi!");
-        document.getElementById("p-new-password").value = "";
-    })
-    .catch(err => {
-        toggleLoading(false);
-        alert(err.message);
-    });
+        .then(res => {
+            if (!res.ok) throw new Error("Güncelleme başarısız!");
+            return res.json();
+        })
+        .then(updatedUser => {
+            // Şifre değiştiyse JS hafızasındakini de güncelle
+            if (newPass && newPass.trim() !== "") {
+                currentUser.password = newPass;
+            }
+            syncUserAndRefresh("Profiliniz başarıyla güncellendi!");
+            document.getElementById("p-new-password").value = "";
+        })
+        .catch(err => {
+            toggleLoading(false);
+            alert(err.message);
+        });
 };
 
 // 8. ADMIN KİTAP EKLEME (GÜNCELLENMİŞ)
@@ -555,7 +590,7 @@ document.getElementById("adminAddBookBtn").onclick = () => {
     const author = document.getElementById("adminBookAuthor").value.trim();
     const stock = document.getElementById("adminBookStock").value;
     const cat = document.getElementById("adminBookCat").value;
-    const coverUrl = document.getElementById("adminBookCover").value.trim(); 
+    const coverUrl = document.getElementById("adminBookCover").value.trim();
 
     // 1. Boş Satır Kontrolü
     if (!title || !author || !stock || !cat || !coverUrl) {
@@ -585,7 +620,7 @@ document.getElementById("adminAddBookBtn").onclick = () => {
         author: author,
         category: cat,
         stockCount: stockInt,
-        coverUrl: coverUrl, 
+        coverUrl: coverUrl,
         likeCount: 0
     };
 
@@ -594,17 +629,17 @@ document.getElementById("adminAddBookBtn").onclick = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newBook)
     })
-    .then(res => res.json())
-    .then(savedBook => {
-        alert("Kitap veritabanına başarıyla eklendi!");
-        // Formu temizle
-        document.getElementById("adminBookTitle").value = "";
-        document.getElementById("adminBookAuthor").value = "";
-        document.getElementById("adminBookStock").value = "";
-        document.getElementById("adminBookCover").value = "";
-        initApp();
-    })
-    .catch(err => alert("Kitap eklenirken hata oluştu."));
+        .then(res => res.json())
+        .then(savedBook => {
+            alert("Kitap veritabanına başarıyla eklendi!");
+            // Formu temizle
+            document.getElementById("adminBookTitle").value = "";
+            document.getElementById("adminBookAuthor").value = "";
+            document.getElementById("adminBookStock").value = "";
+            document.getElementById("adminBookCover").value = "";
+            initApp();
+        })
+        .catch(err => alert("Kitap eklenirken hata oluştu."));
 };
 
 
@@ -615,14 +650,14 @@ document.getElementById("navHomeBtn").onclick = () => {
     initApp(); // Kitapları ve önerileri tazeleyerek getir
 };
 
-document.getElementById("closeDetailBtn").onclick = () => { 
+document.getElementById("closeDetailBtn").onclick = () => {
     showView('app');
 };
 
 document.getElementById("navProfileBtn").onclick = () => {
     showView('profile');
     renderProfileLists();
-    updateUserUI(); 
+    updateUserUI();
 };
 
 document.getElementById("backHomeProfileBtn").onclick = () => {
@@ -662,7 +697,7 @@ function renderProfileLists() {
         });
     }
 
-    // Ödünç Aldıklarım
+    // Ödünç Aldıklarım (renderProfileLists fonksiyonu içindeki kısım)
     const borDiv = document.getElementById("list-borrowed");
     borDiv.innerHTML = "";
     if (!currentUser.borrowedBooks || currentUser.borrowedBooks.length === 0) {
@@ -671,7 +706,7 @@ function renderProfileLists() {
         currentUser.borrowedBooks.forEach(bb => {
             borDiv.innerHTML += `
              <div onclick="openBookDetail(${bb.bookId})" class="book-card" style="padding:10px; cursor:pointer; border:1px solid #8d6e63; background:#efebe9;">
-                <p style="font-weight:bold; color:#4e342e;">${bb.title}</p> <small style="color:#d32f2f;">İade etmek için tıkla ↩️</small>
+                <p style="font-weight:bold; color:#4e342e;">${bb.title}</p> <small style="color:#d32f2f;">Detaylara git ve İade Et ↩️</small>
              </div>`;
         });
     }
