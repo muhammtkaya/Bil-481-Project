@@ -1,6 +1,14 @@
 package com.libra.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "kitaplar")
@@ -15,8 +23,10 @@ public class Book {
     @Column(nullable = false)
     private String author;
 
-    @Column(name = "category")
-    private String category;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     @Column(name = "stock_sayisi")
     private Integer stockCount = 0;
@@ -27,10 +37,12 @@ public class Book {
     @Column(name = "cover_url", length = 1000)
     private String coverUrl;
 
+  
     public Book() {
     }
 
-    // GETTER SETTER
+    // GETTER SETTER 
+
     public Integer getId() {
         return id;
     }
@@ -55,11 +67,11 @@ public class Book {
         this.author = author;
     }
 
-    public String getCategory() {
+    public Category getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(Category category) {
         this.category = category;
     }
 

@@ -1,17 +1,33 @@
 package com.libra.service;
 
-import com.libra.model.Book;
-import com.libra.repository.BookRepository;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
+
+import com.libra.model.Book;
+import com.libra.repository.BookRepository;
+import com.libra.strategy.ISearchStrategy;
 
 @Service
 public class BookService {
-    @Autowired
-    private BookRepository bookRepository;
+    
+    private final BookRepository bookRepository;
+    
+    // UML Diyagramındaki özellik: -searchStrategies: Map<String, ISearchStrategy>
+    private final Map<String, ISearchStrategy> searchStrategies = new HashMap<>();
 
-    /* Filtreleme yapmak için fonksiyonlar buraya yazılacak */
+    @Autowired
+    public BookService(BookRepository bookRepository, List<ISearchStrategy> strategies) {
+        this.bookRepository = bookRepository;
+        // Sistemdeki tüm stratejileri alıp Map içine (Örn: "TITLE" -> TitleSearchStrategy) yerleştiriyoruz.
+        for (ISearchStrategy strategy : strategies) {
+            searchStrategies.put(strategy.getStrategyName(), strategy);
+        }
+    }
+
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
     }
@@ -24,13 +40,20 @@ public class BookService {
         return bookRepository.findByCategoryIn(categories);
     }
 
-    // Arama Çubuğu
-    public List<Book> searchBooks(String keyword) {
+    // UML Diyagramındaki metod: +searchBooks(keyword: String, searchType: String): List<Book>
+    public List<Book> searchBooks(String keyword, String searchType) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return bookRepository.findAll();
         }
-        return bookRepository.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCaseOrCategoryContainingIgnoreCase(
-                keyword, keyword, keyword);
+
+        // Eğer frontend'den searchType boş veya hatalı gelirse, varsayılan olarak GENERAL kullan
+        if (searchType == null || !searchStrategies.containsKey(searchType.toUpperCase())) {
+            searchType = "GENERAL";
+        }
+
+        // Map üzerinden ilgili stratejiyi bul ve aramayı ona devret (Strategy Pattern büyüsü!)
+        ISearchStrategy strategy = searchStrategies.get(searchType.toUpperCase());
+        return strategy.search(keyword);
     }
 
     public Book updateCoverUrl(Integer bookId, String coverUrl) throws Exception {

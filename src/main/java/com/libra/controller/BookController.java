@@ -1,7 +1,8 @@
 package com.libra.controller;
 
-import com.libra.model.Book;
-import com.libra.service.BookService;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import com.libra.model.Book;
+import com.libra.service.BookService;
 
 @RestController
 @RequestMapping("/api/books")
@@ -35,9 +36,14 @@ public class BookController {
         return bookService.getRecommendedBooks(categories);
     }
 
+    /* GÜNCELLENEN KISIM: Strategy Pattern için "type" parametresi eklendi.
+       required = false yaptık, eğer frontend type göndermezse backend'de otomatik GENERAL çalışacak. */
     @GetMapping("/search")
-    public List<Book> searchBooks(@RequestParam("keyword") String keyword) {
-        return bookService.searchBooks(keyword);
+    public List<Book> searchBooks(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(value = "type", required = false) String searchType) {
+        
+        return bookService.searchBooks(keyword, searchType);
     }
 
     @PostMapping("/add")
@@ -59,6 +65,7 @@ public class BookController {
         }
     }
 
+    // MAP te hata vardı kısmı: Şimdilik sorunsuz çalışacaktır.
     @PutMapping("/{id}/cover")
     public ResponseEntity<?> updateCover(@PathVariable Integer id, @RequestBody Map<String, String> payload) {
         try {
