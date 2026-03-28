@@ -37,7 +37,7 @@ public class BookService {
         if (categories == null || categories.isEmpty()) {
             return bookRepository.findAll();
         }
-        return bookRepository.findByCategoryIn(categories);
+        return bookRepository.findByCategory_CategoryNameIn(categories);
     }
 
     // UML Diyagramındaki metod: +searchBooks(keyword: String, searchType: String): List<Book>
