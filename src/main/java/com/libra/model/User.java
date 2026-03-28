@@ -2,7 +2,6 @@ package com.libra.model;
 
 import jakarta.persistence.*;
 
-
 @Entity
 @Table(name = "kullanicilar")
 public class User {
@@ -13,13 +12,13 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String username;
-    
-    
+
     @Column(name = "categories", length = 1000)
-    private String categories; 
+    private String categories;
 
     public java.util.List<String> getCategories() {
-     if (this.categories == null || this.categories.isEmpty()) return new java.util.ArrayList<>();
+        if (this.categories == null || this.categories.isEmpty())
+            return new java.util.ArrayList<>();
         return java.util.Arrays.asList(this.categories.split(","));
     }
 
@@ -30,7 +29,7 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String password;
 
-    @Column(name = "role_name", nullable = false)
+    @Column(name = "role", nullable = false)
     private String role;
 
     public User() {

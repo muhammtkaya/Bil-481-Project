@@ -289,8 +289,15 @@ if (searchInput) {
 
 function updateUserUI() {
     const adminTabBtn = document.getElementById("adminTabBtn");
-    if (currentUser.role === 'admin') adminTabBtn.style.display = "block";
-    else adminTabBtn.style.display = "none";
+
+    const roleValue = (currentUser.role || currentUser.roleName || "").toLowerCase();
+
+    // Kontrolü 'admin' olarak yap
+    if (roleValue === 'admin') {
+        adminTabBtn.style.display = "block";
+    } else {
+        adminTabBtn.style.display = "none";
+    }
 
     // 1. İsmi yazdır
     const namePart = currentUser.username.split('@')[0];
