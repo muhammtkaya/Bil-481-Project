@@ -1,7 +1,8 @@
 package com.libra.controller;
 
-import com.libra.model.Book;
-import com.libra.service.BookService;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import com.libra.model.Book;
+import com.libra.service.BookService;
 
 @RestController
 @RequestMapping("/api/books")
@@ -24,10 +25,19 @@ public class BookController {
     @Autowired
     private BookService bookService;
 
-    /* Tarayıcıdan http://localhost:8080/api/books adresine gidildiğinde çalışır */
     @GetMapping
     public List<Book> getAllBooks() {
         return bookService.getAllBooks();
+    }
+
+    // YENİ EKLENEN METOT: JavaScript'in detayları çekebilmesi için şart!
+    @GetMapping("/{id}")
+    public ResponseEntity<Book> getBookById(@PathVariable Integer id) {
+        return bookService.getAllBooks().stream()
+                .filter(b -> b.getId().equals(id))
+                .findFirst()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/recommended")
@@ -42,7 +52,6 @@ public class BookController {
 
     @PostMapping("/add")
     public ResponseEntity<Book> addBook(@RequestBody Book newBook) {
-        // Yeni kitap eklerken varsayılan değerleri kontrol edebiliriz
         if (newBook.getStockCount() == null)
             newBook.setStockCount(1);
         Book savedBook = bookService.addBook(newBook);

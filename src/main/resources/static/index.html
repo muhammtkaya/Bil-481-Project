@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <title>LibRA - Kütüphane Sistemi</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>v
 </head>
 
 <body>
@@ -109,7 +111,8 @@
                         <div class="stats-row">
                             <span>📦 Stok: <span id="d-stock-count">0</span></span>
                         </div>
-                        <div class="detail-actions" id="d-buttons"></div>
+                        <div class="detail-actions" id="d-buttons">
+                            </div>
                     </div>
                 </div>
             </div>
@@ -120,18 +123,16 @@
         <div class="profile-layout">
             <aside class="profile-sidebar">
                 <div class="user-info">
-                    <div class="avatar" id="profileAvatar">FK</div>
+                    <div class="avatar" id="profileAvatar">..</div>
                     <h3 id="profileName">Kullanıcı</h3>
                 </div>
                 <nav class="profile-menu">
                     <button data-tab="info" class="menu-btn active">👤 Profil Ayarları</button>
-                    <button id="adminTabBtn" data-tab="admin" class="menu-btn" style="display:none; color:#e65100;">🛠️
-                        Kitap Ekle</button>
+                    <button id="adminTabBtn" data-tab="admin" class="menu-btn" style="display:none; color:#e65100;">🛠️ Kitap Ekle</button>
                     <button data-tab="borrowed" class="menu-btn">📖 Ödünç Aldıklarım</button>
                     <button data-tab="waiting" class="menu-btn">⏳ Beklediklerim</button>
                     <button data-tab="favorites" class="menu-btn">❤️ Favorilerim</button>
                     <button id="backHomeProfileBtn" class="menu-btn back-home">⬅️ Dön</button>
-
                     <button id="logoutBtn" class="menu-btn" style="color:#ffccbc;">Çıkış Yap</button>
                 </nav>
             </aside>
@@ -158,17 +159,15 @@
                         <button id="updateProfileBtn" class="save-btn" style="margin-top:20px;">Kaydet</button>
                     </div>
                 </div>
+
                 <div id="tab-admin" class="tab-content" style="display:none;">
                     <h2 style="color:#e65100;">🛠️ Yönetici Paneli</h2>
                     <div class="info-card" style="border:1px solid #ffcc80; background:#fff3e0;">
                         <h3 style="margin-bottom:15px;">Yeni Kitap Ekle</h3>
-
                         <label>Kitap Adı</label>
                         <input id="adminBookTitle" placeholder="Örn: Sefiller">
-
                         <label>Yazar</label>
                         <input id="adminBookAuthor" placeholder="Örn: Victor Hugo">
-
                         <label>Kategori</label>
                         <select id="adminBookCat" class="custom-select">
                             <option value="Yazılım">Yazılım & Teknoloji</option>
@@ -178,25 +177,24 @@
                             <option value="Bilim">Bilim & Mühendislik</option>
                             <option value="Diğer">Diğer</option>
                         </select>
-
                         <label>Stok Adedi</label>
                         <input id="adminBookStock" type="number" placeholder="Örn: 5" min="1">
-
                         <label>Kapak URL</label>
                         <input id="adminBookCover" placeholder="Örn: https://...">
-
-                        <button id="adminAddBookBtn" style="background:#e65100; margin-top:10px;">+ Kitabı Sisteme
-                            Ekle</button>
+                        <button id="adminAddBookBtn" style="background:#e65100; margin-top:10px;">+ Kitabı Sisteme Ekle</button>
                     </div>
                 </div>
+
                 <div id="tab-borrowed" class="tab-content" style="display:none;">
                     <h2>Ödünç Aldıklarım</h2>
                     <div id="list-borrowed" class="book-grid"></div>
                 </div>
+
                 <div id="tab-waiting" class="tab-content" style="display:none;">
                     <h2>Sıra Beklediklerim</h2>
                     <div id="list-waiting" class="book-grid"></div>
                 </div>
+
                 <div id="tab-favorites" class="tab-content" style="display:none;">
                     <h2>Favorilerim</h2>
                     <div id="list-favorites" class="book-grid"></div>

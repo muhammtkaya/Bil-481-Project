@@ -1,14 +1,18 @@
 package com.libra.controller;
 
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.libra.model.BorrowedBook;
 import com.libra.service.BorrowingService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/borrowings")
@@ -17,63 +21,43 @@ public class BorrowingController {
     @Autowired
     private BorrowingService borrowingService;
 
-    /**
-     * Bir kitabın ödünç alınmasını sağlar. Kullanıcı ID'si ve Kitap ID'si içeren
-     * bir
-     * JSON payload bekler.
-     */
     @PostMapping("/borrow")
     public ResponseEntity<?> borrowBook(@RequestBody Map<String, Integer> payload) {
         try {
             Integer userId = payload.get("userId");
             Integer bookId = payload.get("bookId");
 
-            BorrowedBook record = borrowingService.borrowBook(userId, bookId);
-            return ResponseEntity.ok(record);
+            Object result = borrowingService.borrowBook(userId, bookId);
+
+            // Eğer sonuç "WAITLISTED" ise 200 OK ile mesaj dönüyoruz (Artık hata değil!)
+            if (result instanceof String && "WAITLISTED".equals(result)) {
+                return ResponseEntity.ok(Map.of("message", "Stokta yok, bekleme listesine başarıyla eklendiniz."));
+            }
+
+            // Normal ödünç alma işlemi
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            // Gerçek hataları (örn: zaten ödünç almış olması) 400 Bad Request ile dönüyoruz
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    /**
-     * Ödünç alınan kitabın iade edilmesini sağlar (Kayıt ID'si üzerinden).
-     */
     @PostMapping("/return/{id}")
     public ResponseEntity<?> returnBook(@PathVariable Integer id) {
         try {
             BorrowedBook updatedRecord = borrowingService.returnBook(id);
             return ResponseEntity.ok(updatedRecord);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    /**
-     * Profil sayfası için belirli bir kullanıcının geçmiş ve aktif tüm ödünç alma
-     * kayıtlarını getirir.
-     */
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getUserBorrowings(@PathVariable Integer userId) {
         try {
-            List<BorrowedBook> records = borrowingService.getBorrowingsByUserId(userId);
-            return ResponseEntity.ok(records);
+            return ResponseEntity.ok(borrowingService.getBorrowingsByUserId(userId));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Ödünç alma kayıtları getirilirken hata oluştu: " + e.getMessage());
-        }
-    }
-
-    /**
-     * İade tarihi geçmiş ve ceza uygulanması gereken kitapları listelemek (Admin
-     * için)
-     */
-    @GetMapping("/overdue")
-    public ResponseEntity<?> getOverdueBorrowings() {
-        try {
-            List<BorrowedBook> overdueRecords = borrowingService.getOverdueBorrowings();
-            return ResponseEntity.ok(overdueRecords);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
